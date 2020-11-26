@@ -9,9 +9,9 @@ using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using tutag.Data;
+using Tutag.Data;
 
-namespace tutag
+namespace Tutag
 {
     public class Startup
     {
@@ -54,6 +54,7 @@ namespace tutag
             {
                 endpoints.MapBlazorHub();
                 endpoints.MapFallbackToPage("/_Host");
+                endpoints.MapHub<GroupChatHub>(GroupChatHub.HubUrl);
             });
         }
     }

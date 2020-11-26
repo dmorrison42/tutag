@@ -1,6 +1,6 @@
 using System;
 
-namespace tutag.Data
+namespace Tutag.Data
 {
     public class WeatherForecast
     {
