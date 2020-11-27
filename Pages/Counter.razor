@@ -1,4 +1,7 @@
 ﻿@page "/counter"
+@using Confluent.Kafka
+@using System.Threading
+@implements IDisposable
 
 <h1>Counter</h1>
 
@@ -7,10 +10,71 @@
 <button class="btn btn-primary" @onclick="IncrementCount">Click me</button>
 
 @code {
+    private static string _bootstrapServers = "localhost:9092";
+    private readonly string _topic = "voting";
+    private Task _consumer = null;
+    private CancellationTokenSource _cancel = new CancellationTokenSource();
+
     private int currentCount = 0;
 
     private void IncrementCount()
     {
-        currentCount++;
+        var producerConfig = new ProducerConfig
+        {
+            BootstrapServers = _bootstrapServers,
+            ClientId = "TODO: Track clients We are all one client for now.",
+        };
+
+        using (var producer = new ProducerBuilder<Null, string>(producerConfig).Build())
+        {
+            producer.Produce(_topic, new Message<Null, string>
+            {
+                Value = "Increment",
+            });
+            producer.Flush(TimeSpan.FromSeconds(10));
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        _consumer = Task.Run(() =>
+        {
+            var config = new ConsumerConfig
+            {
+                BootstrapServers = _bootstrapServers,
+                GroupId = System.Guid.NewGuid().ToString(),
+                AutoOffsetReset = AutoOffsetReset.Earliest,
+                EnableAutoCommit = false,
+            };
+
+            using (var consumer = new ConsumerBuilder<Ignore, string>(config).Build())
+            {
+                consumer.Subscribe(_topic);
+
+                while (!_cancel.Token.IsCancellationRequested)
+                {
+                    try
+                    {
+                        var consumeResult = consumer.Consume(_cancel.Token);
+                        var msg = consumeResult.Message;
+                        currentCount++;
+                        Console.WriteLine(currentCount);
+                        InvokeAsync(StateHasChanged);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(ex);
+                    }
+                }
+
+                consumer.Close();
+            }
+        });
+
+    }
+
+    public void Dispose()
+    {
+        _cancel.Cancel();
     }
 }

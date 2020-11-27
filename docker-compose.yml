@@ -1,0 +1,33 @@
+version: "2"
+
+services:
+  zookeeper:
+    container_name: zookeeper
+    image: "docker.io/bitnami/zookeeper:latest"
+    volumes:
+      - "zookeeper_data:/bitnami"
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+  kafka:
+    container_name: kafka-broker
+    image: "docker.io/bitnami/kafka:latest"
+    hostname: localhost
+    ports:
+      - "192.168.1.40:9092:9092"
+      - "127.0.0.1:9092:9092"
+    volumes:
+      - "kafka_data:/bitnami"
+    environment:
+      KAFKA_CREATE_TOPICS: "dev-test:1:1"
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_HOST_NAME: localhost
+      ALLOW_PLAINTEXT_LISTENER: "yes"
+      KAFKA_ADVERTISED_PORT: 9092
+    depends_on:
+      - zookeeper
+
+volumes:
+  zookeeper_data:
+    driver: local
+  kafka_data:
+    driver: local
