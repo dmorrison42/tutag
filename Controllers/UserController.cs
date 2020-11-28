@@ -17,7 +17,7 @@ namespace Tutag.Controllers
         }
 
         [HttpPost("authenticate")]
-        public IActionResult Authenticate([FromForm] AuthenticateRequest model)
+        public IActionResult Authenticate([FromForm] AuthenticateRequest model, [FromForm] string redirect)
         {
             var token = _userService.Authenticate(model);
 
@@ -26,11 +26,19 @@ namespace Tutag.Controllers
 
             // TODO: better way to handle this?
             // maybe use the Authorization header without setting a cookie
-            Response.Cookies.Append("Authorization", token, new Microsoft.AspNetCore.Http.CookieOptions {
+            Response.Cookies.Append("Authorization", token, new Microsoft.AspNetCore.Http.CookieOptions
+            {
                 MaxAge = TimeSpan.FromDays(1),
             });
 
-            return Redirect("/");
+            if (redirect.ToLower().EndsWith("login"))
+            {
+                return Redirect("/");
+            }
+            else
+            {
+                return Redirect(redirect);
+            }
         }
     }
 }

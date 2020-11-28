@@ -1,4 +1,5 @@
 @page "/login"
+@inject NavigationManager MyNavigationManager
 
 <form action="/users/authenticate" method="POST">
   <label for="Username">Username:</label><br>
@@ -7,5 +8,6 @@
   <label for="RoomCode">Room Code:</label><br>
   <input type="text" name="RoomCode" value=""><br><br>
 
+  <input type="hidden" name="redirect" value="@(MyNavigationManager.Uri)"><br><br>
   <input type="submit" value="Submit">
 </form>
