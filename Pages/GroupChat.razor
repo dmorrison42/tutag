@@ -32,8 +32,8 @@
                 }
             }
             <hr />
-            <textarea class="input-lg" placeholder="enter your comment" @bind="@_newMessage"></textarea>
-            <button class="btn btn-default" @onclick="@(() => SendAsync(_newMessage))">Send</button>
+            <textarea class="input-lg" placeholder="enter your comment" @bind="@_newMessage"  @bind:event="oninput" @onkeyup="ProcessKey"></textarea>
+            <button class="btn btn-default" @onclick="@(() => SendAsync())">Send</button>
         </div>
     </Authorized>
     <NotAuthorized>
@@ -58,14 +58,21 @@
     // list of messages in chat
     private List<ChatMessage> _messages = new List<ChatMessage>();
 
-    private async Task SendAsync(string message)
+    private async Task SendAsync()
     {
         await _producer.ProduceAsync(_topic, new Message<string, string>
         {
             Key = _roomCode,
-            Value = JObject.FromObject(new ChatMessage(_username, message)).ToString(),
+            Value = JObject.FromObject(new ChatMessage(_username, _newMessage)).ToString(),
         });
         _newMessage = null;
+    }
+
+    public async Task ProcessKey(KeyboardEventArgs e) {
+        if (!e.ShiftKey && e.Key == "Enter")
+        {
+            await SendAsync();
+        }
     }
 
     protected override async Task OnInitializedAsync()
