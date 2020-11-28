@@ -3,11 +3,20 @@
 @using System.Threading
 @implements IDisposable
 
-<h1>Counter</h1>
+<AuthorizeView>
+    <Authorized>
+        @{var user = context.User as Tutag.Entities.User; }
+        <h1>Counter</h1>
 
-<p>Current count: @currentCount</p>
+        <p>User: @user.Username</p>
+        <p>Current count: @currentCount</p>
 
-<button class="btn btn-primary" @onclick="IncrementCount">Click me</button>
+        <button class="btn btn-primary" @onclick="IncrementCount">Click me</button>
+    </Authorized>
+    <NotAuthorized>
+        <Login></Login>
+    </NotAuthorized>
+</AuthorizeView>
 
 @code {
     private static string _bootstrapServers = "localhost:9092";

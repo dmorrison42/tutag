@@ -10,6 +10,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Tutag.Data;
+using Tutag.Helpers;
+using Tutag.Services;
 
 namespace Tutag
 {
@@ -27,8 +29,11 @@ namespace Tutag
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddRazorPages();
+            services.AddControllers();
             services.AddServerSideBlazor();
             services.AddSingleton<WeatherForecastService>();
+            services.AddScoped<IUserService, UserService>();
+            services.AddAuthorization();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -50,11 +55,14 @@ namespace Tutag
 
             app.UseRouting();
 
+            app.UseMiddleware<JwtMiddleware>();
+
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapBlazorHub();
                 endpoints.MapFallbackToPage("/_Host");
                 endpoints.MapHub<GroupChatHub>(GroupChatHub.HubUrl);
+                endpoints.MapControllers();
             });
         }
     }
