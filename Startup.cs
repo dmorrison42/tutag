@@ -61,7 +61,6 @@ namespace Tutag
             {
                 endpoints.MapBlazorHub();
                 endpoints.MapFallbackToPage("/_Host");
-                endpoints.MapHub<GroupChatHub>(GroupChatHub.HubUrl);
                 endpoints.MapControllers();
             });
         }
