@@ -1,8 +1,8 @@
 @page "/groupchat"
 @using Confluent.Kafka
 @using System.Threading
-@using Newtonsoft.Json;
-@using Newtonsoft.Json.Linq;
+@using System.ComponentModel
+@using Newtonsoft.Json.Linq
 
 @implements IDisposable
 
@@ -131,17 +131,18 @@
 
     private class ChatMessage
     {
-        public ChatMessage(string username, string body)
+        public ChatMessage(string username, string body, bool isNotice = false)
         {
             Username = username;
             Body = body;
+            IsNotice = isNotice;
         }
 
         public string Username { get; set; }
         public string Body { get; set; }
 
-        [JsonIgnore]
-        public bool IsNotice => Body.StartsWith("[Notice]");
+        [DefaultValue(false)]
+        public bool IsNotice { get; set; }
 
         public string CSS(string myUsername) => Username == myUsername ? "sent" : "received";
     }
