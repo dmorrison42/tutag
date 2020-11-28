@@ -113,8 +113,9 @@
                     {
                         var consumeResult = consumer.Consume(_cancel.Token);
                         var msg = consumeResult.Message;
-                        _messages.Add(JObject.Parse(msg.Value)?.ToObject<ChatMessage>());
-                        Console.WriteLine(msg.Value);
+                        if (msg.Key == _roomCode) {
+                            _messages.Add(JObject.Parse(msg.Value)?.ToObject<ChatMessage>());
+                        }
                         await InvokeAsync(StateHasChanged);
                     }
                     catch (Exception ex)
