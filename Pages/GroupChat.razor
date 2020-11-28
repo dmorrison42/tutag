@@ -14,7 +14,13 @@
         <h1>Blazor SignalR Chat Sample</h1>
         <div class="alert alert-secondary mt-4" role="alert">
             <span class="oi oi-person mr-2" aria-hidden="true"></span>
-            <span>You are connected as <b>@_username</b></span>
+            <span>
+                You are connected as 
+                <b>@_username</b>
+                @if (_isAdmin) {
+                    <i>[Admin]</i>
+                }
+            </span>
         </div>
         <div id="scrollbox">
             @foreach (var item in _messages)
@@ -49,6 +55,7 @@
     private IProducer<string, string> _producer = null;
 
     // name of the user who will be chatting
+    private bool _isAdmin;
     private string _username;
     private string _roomCode;
 
@@ -81,6 +88,7 @@
         var user = authState.User as Tutag.Entities.User;
         _username = user?.Username;
         _roomCode = user?.RoomCode;
+        _isAdmin = user?.IsAdmin ?? false;
         if (user == null) {
             return;
         }

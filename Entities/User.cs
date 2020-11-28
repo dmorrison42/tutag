@@ -9,14 +9,16 @@ namespace Tutag.Entities
     {
         private JwtSecurityToken _token;
 
-        public User(JwtSecurityToken token) : base(new ClaimsIdentity(token.Claims, "jtw"), new string[] { }) {
+        public User(JwtSecurityToken token) : base(new ClaimsIdentity(token.Claims, "jtw"), new string[] { })
+        {
             _token = token;
 
             Username = token.Claims.First(x => x.Type == "user").Value;
             RoomCode = token.Claims.First(x => x.Type == "room").Value;
+            IsAdmin = System.Convert.ToBoolean(token.Claims.First(x => x.Type == "isAdmin").Value);
         }
-
         public string Username { get; }
         public string RoomCode { get; }
+        public bool IsAdmin { get; }
     }
 }
