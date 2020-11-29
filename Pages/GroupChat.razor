@@ -17,7 +17,9 @@
             <span>
                 You are connected as 
                 <b>@UserService.CurrentUser?.Username</b>
-                @if (@UserService.CurrentUser?.IsAdmin == true) {
+                Room Code
+                <i>@UserService.CurrentUser?.RoomCode</i>
+                @if (UserService.CurrentUser?.IsAdmin == true) {
                     <i>[Admin]</i>
                 }
             </span>
