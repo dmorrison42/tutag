@@ -1,17 +1,27 @@
 ﻿@page "/counter"
 @using Confluent.Kafka
 @using System.Threading
+@using System.Collections.Generic
 @implements IDisposable
+@inject IUserService UserService
 
 <AuthorizeView>
     <Authorized>
-        @{var user = context.User as Tutag.Entities.User; }
         <h1>Counter</h1>
 
-        <p>User: @user.Username</p>
-        <p>Current count: @currentCount</p>
+        You are connected as
+        <b>@UserService.CurrentUser?.Username</b>
+        Room Code
+        <i>@UserService.CurrentUser?.RoomCode</i>
+        @if (UserService.CurrentUser?.IsAdmin == true)
+        {
+            <i>[Admin]</i>
+        }
+        <p>Vote Total: @VoteTotal</p>
 
-        <button class="btn btn-primary" @onclick="IncrementCount">Click me</button>
+        <button class="btn btn-primary" @onclick="() => Vote(-1)">-1</button>
+        <button class="btn btn-primary" @onclick="() => Vote(0)">0</button>
+        <button class="btn btn-primary" @onclick="() => Vote(1)">+1</button>
     </Authorized>
     <NotAuthorized>
         <Login></Login>
@@ -24,9 +34,10 @@
     private Task _consumer = null;
     private CancellationTokenSource _cancel = new CancellationTokenSource();
 
-    private int currentCount = 0;
+    private Dictionary<string, int> _votes = new Dictionary<string, int>();
+    private int VoteTotal => _votes.Values.Sum();
 
-    private void IncrementCount()
+    private void Vote(int value)
     {
         var producerConfig = new ProducerConfig
         {
@@ -34,11 +45,15 @@
             ClientId = "TODO: Track clients We are all one client for now.",
         };
 
-        using (var producer = new ProducerBuilder<Null, string>(producerConfig).Build())
+        using (var producer = new ProducerBuilder<string, string>(producerConfig).Build())
         {
-            producer.Produce(_topic, new Message<Null, string>
+            producer.Produce(_topic, new Message<string, string>
             {
-                Value = "Increment",
+                Key = UserService.CurrentUser.RoomCode,
+                Value = JObject.FromObject(new {
+                    Username = UserService.CurrentUser.Username,
+                    Vote = value,
+                }).ToString(),
             });
             producer.Flush(TimeSpan.FromSeconds(10));
         }
@@ -56,7 +71,7 @@
                 EnableAutoCommit = false,
             };
 
-            using (var consumer = new ConsumerBuilder<Ignore, string>(config).Build())
+            using (var consumer = new ConsumerBuilder<string, string>(config).Build())
             {
                 consumer.Subscribe(_topic);
 
@@ -66,9 +81,12 @@
                     {
                         var consumeResult = consumer.Consume(_cancel.Token);
                         var msg = consumeResult.Message;
-                        currentCount++;
-                        Console.WriteLine(currentCount);
-                        InvokeAsync(StateHasChanged);
+                        var value = JObject.Parse(msg.Value);
+
+                        if (msg.Key == UserService.CurrentUser?.RoomCode) {
+                            _votes[value?["Username"].ToObject<string>()] = value?["Vote"]?.ToObject<int?>() ?? 0;
+                            InvokeAsync(StateHasChanged);
+                        }
                     }
                     catch (Exception ex)
                     {
