@@ -7,9 +7,10 @@ using System.Threading;
 using System.Text;
 
 using Confluent.Kafka;
-using Newtonsoft.Json.Linq;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using Newtonsoft.Json.Linq;
 
 using Tutag.Helpers;
 using Tutag.Models;
@@ -19,17 +20,36 @@ namespace Tutag.Services
     public interface IUserService
     {
         string Authenticate(AuthenticateRequest model);
+        Entities.User CurrentUser { get; }
+        string[] Users { get; }
     }
 
     public class UserService : IUserService
     {
         private readonly AppSettings _appSettings;
+        private readonly AuthenticationStateProvider _authProvider;
         static IProducer<string, string> _producer = null;
         static IConsumer<string, string> _consumer = null;
         static string _topic = "authenticate";
         private static string _bootstrapServers = "localhost:9092";
         private static CancellationTokenSource _cancel = new CancellationTokenSource();
         private static Dictionary<string, List<string>> _users = new Dictionary<string, List<string>>();
+
+        public Entities.User CurrentUser
+        {
+            get
+            {
+                var authState = _authProvider.GetAuthenticationStateAsync();
+                return authState.Wait(500)
+                    ? authState.Result?.User as Tutag.Entities.User
+                    : null;
+            }
+        }
+
+        public string[] Users => _users.ContainsKey(CurrentUser?.RoomCode)
+            ? _users[CurrentUser?.RoomCode].ToArray()
+            : null;
+
 
         static UserService()
         {
@@ -51,9 +71,10 @@ namespace Tutag.Services
             _consumer.Subscribe(_topic);
         }
 
-        public UserService(IOptions<AppSettings> appSettings)
+        public UserService(IOptions<AppSettings> appSettings, AuthenticationStateProvider auth)
         {
             _appSettings = appSettings.Value;
+            _authProvider = auth;
         }
 
         public string Authenticate(AuthenticateRequest model)

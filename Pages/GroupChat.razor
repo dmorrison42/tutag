@@ -7,7 +7,7 @@
 @implements IDisposable
 
 @inject NavigationManager navigationManager
-@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IUserService UserService
 
 <AuthorizeView>
     <Authorized>
@@ -16,8 +16,8 @@
             <span class="oi oi-person mr-2" aria-hidden="true"></span>
             <span>
                 You are connected as 
-                <b>@_username</b>
-                @if (_isAdmin) {
+                <b>@UserService.CurrentUser?.Username</b>
+                @if (@UserService.CurrentUser?.IsAdmin == true) {
                     <i>[Admin]</i>
                 }
             </span>
@@ -31,7 +31,7 @@
                 }
                 else
                 {
-                    <div class="@item.CSS(_username)">
+                    <div class="@item.CSS(UserService.CurrentUser?.Username)">
                         <div class="user">@item.Username</div>
                         <div class="msg">@item.Body</div>
                     </div>
@@ -54,11 +54,6 @@
     private Task _consumerTask = null;
     private IProducer<string, string> _producer = null;
 
-    // name of the user who will be chatting
-    private bool _isAdmin;
-    private string _username;
-    private string _roomCode;
-
     // new message input
     private string _newMessage;
 
@@ -69,8 +64,8 @@
     {
         await _producer.ProduceAsync(_topic, new Message<string, string>
         {
-            Key = _roomCode,
-            Value = JObject.FromObject(new ChatMessage(_username, _newMessage)).ToString(),
+            Key = UserService.CurrentUser?.RoomCode,
+            Value = JObject.FromObject(new ChatMessage(UserService.CurrentUser?.Username, _newMessage)).ToString(),
         });
         _newMessage = null;
     }
@@ -82,21 +77,16 @@
         }
     }
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
-        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-        var user = authState.User as Tutag.Entities.User;
-        _username = user?.Username;
-        _roomCode = user?.RoomCode;
-        _isAdmin = user?.IsAdmin ?? false;
-        if (user == null) {
+        if (UserService.CurrentUser == null) {
             return;
         }
 
         var producerConfig = new ProducerConfig
         {
             BootstrapServers = _bootstrapServers,
-            ClientId = _username,
+            ClientId = UserService.CurrentUser?.Username,
         };
 
         _producer = new ProducerBuilder<string, string>(producerConfig).Build();
@@ -121,7 +111,7 @@
                     {
                         var consumeResult = consumer.Consume(_cancel.Token);
                         var msg = consumeResult.Message;
-                        if (msg.Key == _roomCode) {
+                        if (msg.Key == UserService.CurrentUser?.RoomCode) {
                             _messages.Add(JObject.Parse(msg.Value)?.ToObject<ChatMessage>());
                         }
                         await InvokeAsync(StateHasChanged);
