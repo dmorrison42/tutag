@@ -43,7 +43,7 @@
     private KafkaConnection<string, VoteEvent> _kafka;
     private Dictionary<string, int> _votes = new Dictionary<string, int>();
 
-    private int VoteTotal => _votes.Values.Sum();
+    private int VoteTotal => _votes.Values.ToList().Sum();
 
     private void Vote(int value)
     {
