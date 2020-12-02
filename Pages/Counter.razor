@@ -28,18 +28,26 @@
 </AuthorizeView>
 
 @code {
-    private KafkaConnection<string, string> _kafka;
+    class VoteEvent
+    {
+        public VoteEvent(string username, int vote)
+        {
+            Username = username;
+            Vote = vote;
+        }
+
+        public string Username { set; get; }
+        public int Vote { set; get; }
+    }
+
+    private KafkaConnection<string, VoteEvent> _kafka;
     private Dictionary<string, int> _votes = new Dictionary<string, int>();
 
     private int VoteTotal => _votes.Values.Sum();
 
     private void Vote(int value)
     {
-        _kafka.Produce(UserService.CurrentUser.RoomCode, JObject.FromObject(new
-        {
-            Username = UserService.CurrentUser.Username,
-            Vote = value,
-        }).ToString());
+        _kafka.Produce(UserService.CurrentUser?.RoomCode, new VoteEvent(UserService.CurrentUser?.Username, value));
     }
 
     protected override void OnInitialized()
@@ -49,14 +57,13 @@
             return;
         }
 
-        _kafka = new KafkaConnection<string, string>("voting", UserService.CurrentUser.Username, async (result) =>
+        _kafka = new KafkaConnection<string, VoteEvent>("voting", UserService.CurrentUser.Username, async (result) =>
         {
             try
             {
                 if (result.Message.Key == UserService.CurrentUser?.RoomCode)
                 {
-                    var value = JObject.Parse(result.Message.Value);
-                    _votes[value?["Username"].ToObject<string>()] = value?["Vote"]?.ToObject<int?>() ?? 0;
+                    _votes[result.Message.Value.Username] = result.Message.Value.Vote;
                     await InvokeAsync(StateHasChanged);
                 }
             }

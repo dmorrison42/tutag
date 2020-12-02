@@ -27,7 +27,7 @@ namespace Tutag.Services
     {
         private readonly AppSettings _appSettings;
         private readonly AuthenticationStateProvider _authProvider;
-        static KafkaConnection<string, string> _kafka;
+        static KafkaConnection<string, Models.AuthenticateRequest> _kafka;
         private static Dictionary<string, List<string>> _users = new Dictionary<string, List<string>>();
 
         public Entities.User CurrentUser
@@ -48,7 +48,7 @@ namespace Tutag.Services
 
         static UserService()
         {
-            _kafka = new KafkaConnection<string, string>("authenticate", "AuthenticationServer");
+            _kafka = new KafkaConnection<string, Models.AuthenticateRequest>("authenticate", "AuthenticationServer");
         }
 
         public UserService(IOptions<AppSettings> appSettings, AuthenticationStateProvider auth)
@@ -59,13 +59,13 @@ namespace Tutag.Services
 
         public string Authenticate(AuthenticateRequest model)
         {
-            _kafka.Produce(model.RoomCode, JObject.FromObject(model).ToString());
+            _kafka.Produce(model.RoomCode, model);
 
             var cancel = new CancellationTokenSource(1000);
             while (true)
             {
                 var consumeResult = _kafka.Consumer.Consume(cancel.Token);
-                var msg = JObject.Parse(consumeResult.Message.Value).ToObject<Models.AuthenticateRequest>();
+                var msg = consumeResult.Message.Value;
 
                 if (!_users.ContainsKey(msg.RoomCode))
                 {

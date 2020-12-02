@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using Confluent.Kafka;
+using Newtonsoft.Json.Linq;
 
 namespace Tutag.Helpers
 {
@@ -11,6 +12,24 @@ namespace Tutag.Helpers
     /// </summary>
     class KafkaConnection<K, V> : IDisposable
     {
+        private class NewtonsoftJsonSerializer<O> : Confluent.Kafka.ISerializer<O>
+        {
+            public byte[] Serialize(O data, SerializationContext context)
+            {
+                return System.Text.Encoding.UTF8.GetBytes(JToken.FromObject(data).ToString());
+            }
+        }
+
+        private class NewtonsoftJsonDeserializer<O> : Confluent.Kafka.IDeserializer<O>
+        {
+            public O Deserialize(ReadOnlySpan<byte> data, bool isNull, SerializationContext context)
+            {
+                if (isNull) return default(O);
+                var text = System.Text.Encoding.UTF8.GetString(data);
+                return JToken.Parse(text).ToObject<O>();
+            }
+        }
+
         // TODO: Pull from app config
         private static string _bootstrapServers = "localhost:9092";
         private Task _consumerTask;
@@ -28,7 +47,9 @@ namespace Tutag.Helpers
                 {
                     BootstrapServers = _bootstrapServers,
                     ClientId = clientId,
-                }).Build();
+                })
+                    .SetValueSerializer(new NewtonsoftJsonSerializer<V>())
+                    .Build();
 
             Consumer = new ConsumerBuilder<K, V>(
                 new ConsumerConfig
@@ -37,7 +58,10 @@ namespace Tutag.Helpers
                     GroupId = System.Guid.NewGuid().ToString(),
                     AutoOffsetReset = AutoOffsetReset.Earliest,
                     EnableAutoCommit = false,
-                }).Build();
+                })
+                    .SetValueDeserializer(new NewtonsoftJsonDeserializer<V>())
+
+                .Build();
             Consumer.Subscribe(topic);
 
             _consumerTask = Task.Run(() =>

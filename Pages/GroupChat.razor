@@ -49,7 +49,7 @@
 </AuthorizeView>
 
 @code {
-    private KafkaConnection<string, string> _kafka;
+    private KafkaConnection<string, ChatMessage> _kafka;
 
     // new message input
     private string _newMessage;
@@ -63,7 +63,7 @@
         _newMessage = null;
         await _kafka.ProduceAsync(
             UserService.CurrentUser?.RoomCode,
-            JObject.FromObject(new ChatMessage(UserService.CurrentUser?.Username, buffer)).ToString());
+            new ChatMessage(UserService.CurrentUser?.Username, buffer));
     }
 
     public async Task ProcessKey(KeyboardEventArgs e) {
@@ -78,11 +78,11 @@
         if (UserService.CurrentUser == null) {
             return;
         }
-        _kafka = new KafkaConnection<string, string>("group-chat", UserService.CurrentUser.Username, async (result) => {
+        _kafka = new KafkaConnection<string, ChatMessage>("group-chat", UserService.CurrentUser.Username, async (result) => {
             try
             {
                 if (result.Message.Key == UserService.CurrentUser?.RoomCode) {
-                    _messages.Add(JObject.Parse(result.Message.Value)?.ToObject<ChatMessage>());
+                    _messages.Add(result.Message.Value);
                     await InvokeAsync(StateHasChanged);
                 }
             }
