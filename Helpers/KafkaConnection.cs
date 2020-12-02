@@ -105,6 +105,7 @@ namespace Tutag.Helpers
         public void Dispose()
         {
             CancellationTokenSource?.Cancel();
+            _consumerTask.Wait();
             Producer?.Dispose();
             Consumer?.Dispose();
         }
