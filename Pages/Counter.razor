@@ -1,6 +1,4 @@
 ﻿@page "/counter"
-@using Confluent.Kafka
-@using System.Threading
 @using System.Collections.Generic
 @implements IDisposable
 @inject IUserService UserService
@@ -8,16 +6,17 @@
 <AuthorizeView>
     <Authorized>
         <h1>Counter</h1>
-
-        You are connected as
-        <b>@UserService.CurrentUser?.Username</b>
-        Room Code
-        <i>@UserService.CurrentUser?.RoomCode</i>
-        @if (UserService.CurrentUser?.IsAdmin == true)
-        {
-            <i>[Admin]</i>
-        }
-        <p>Vote Total: @VoteTotal</p>
+        <div class="alert alert-secondary mt-4" role="alert">
+            <span class="oi oi-person mr-2" aria-hidden="true"></span>
+            <span>
+                You are connected as
+                <b>@UserService.CurrentUser?.Username</b>
+                Room Code
+                <i>@UserService.CurrentUser?.RoomCode</i>
+                <i>@(UserService.CurrentUser?.IsAdmin == true ? "[Admin]" :"")</i>
+            </span>
+            <p>Vote Total: @VoteTotal</p>
+        </div>
 
         <button class="btn btn-primary" @onclick="() => Vote(-1)">-1</button>
         <button class="btn btn-primary" @onclick="() => Vote(0)">0</button>
@@ -29,79 +28,47 @@
 </AuthorizeView>
 
 @code {
-    private static string _bootstrapServers = "localhost:9092";
-    private readonly string _topic = "voting";
-    private Task _consumer = null;
-    private CancellationTokenSource _cancel = new CancellationTokenSource();
-
+    private KafkaConnection<string, string> _kafka;
     private Dictionary<string, int> _votes = new Dictionary<string, int>();
+
     private int VoteTotal => _votes.Values.Sum();
 
     private void Vote(int value)
     {
-        var producerConfig = new ProducerConfig
+        _kafka.Produce(UserService.CurrentUser.RoomCode, JObject.FromObject(new
         {
-            BootstrapServers = _bootstrapServers,
-            ClientId = "TODO: Track clients We are all one client for now.",
-        };
-
-        using (var producer = new ProducerBuilder<string, string>(producerConfig).Build())
-        {
-            producer.Produce(_topic, new Message<string, string>
-            {
-                Key = UserService.CurrentUser.RoomCode,
-                Value = JObject.FromObject(new {
-                    Username = UserService.CurrentUser.Username,
-                    Vote = value,
-                }).ToString(),
-            });
-            producer.Flush(TimeSpan.FromSeconds(10));
-        }
+            Username = UserService.CurrentUser.Username,
+            Vote = value,
+        }).ToString());
     }
 
     protected override void OnInitialized()
     {
-        _consumer = Task.Run(() =>
+        if (UserService.CurrentUser == null)
         {
-            var config = new ConsumerConfig
-            {
-                BootstrapServers = _bootstrapServers,
-                GroupId = System.Guid.NewGuid().ToString(),
-                AutoOffsetReset = AutoOffsetReset.Earliest,
-                EnableAutoCommit = false,
-            };
+            return;
+        }
 
-            using (var consumer = new ConsumerBuilder<string, string>(config).Build())
+        _kafka = new KafkaConnection<string, string>("voting", UserService.CurrentUser.Username, async (result) =>
+        {
+            try
             {
-                consumer.Subscribe(_topic);
-
-                while (!_cancel.Token.IsCancellationRequested)
+                if (result.Message.Key == UserService.CurrentUser?.RoomCode)
                 {
-                    try
-                    {
-                        var consumeResult = consumer.Consume(_cancel.Token);
-                        var msg = consumeResult.Message;
-                        var value = JObject.Parse(msg.Value);
-
-                        if (msg.Key == UserService.CurrentUser?.RoomCode) {
-                            _votes[value?["Username"].ToObject<string>()] = value?["Vote"]?.ToObject<int?>() ?? 0;
-                            InvokeAsync(StateHasChanged);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine(ex);
-                    }
+                    var value = JObject.Parse(result.Message.Value);
+                    _votes[value?["Username"].ToObject<string>()] = value?["Vote"]?.ToObject<int?>() ?? 0;
+                    await InvokeAsync(StateHasChanged);
                 }
-
-                consumer.Close();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
             }
         });
-
     }
 
     public void Dispose()
     {
-        _cancel.Cancel();
+        _kafka?.Dispose();
     }
 }

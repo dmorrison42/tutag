@@ -49,11 +49,7 @@
 </AuthorizeView>
 
 @code {
-    private static string _bootstrapServers = "localhost:9092";
-    private readonly string _topic = "group-chat";
-    private CancellationTokenSource _cancel = new CancellationTokenSource();
-    private Task _consumerTask = null;
-    private IProducer<string, string> _producer = null;
+    private KafkaConnection<string, string> _kafka;
 
     // new message input
     private string _newMessage;
@@ -63,12 +59,11 @@
 
     private async Task SendAsync()
     {
-        await _producer.ProduceAsync(_topic, new Message<string, string>
-        {
-            Key = UserService.CurrentUser?.RoomCode,
-            Value = JObject.FromObject(new ChatMessage(UserService.CurrentUser?.Username, _newMessage)).ToString(),
-        });
+        var buffer = _newMessage;
         _newMessage = null;
+        await _kafka.ProduceAsync(
+            UserService.CurrentUser?.RoomCode,
+            JObject.FromObject(new ChatMessage(UserService.CurrentUser?.Username, buffer)).ToString());
     }
 
     public async Task ProcessKey(KeyboardEventArgs e) {
@@ -83,50 +78,19 @@
         if (UserService.CurrentUser == null) {
             return;
         }
-
-        var producerConfig = new ProducerConfig
-        {
-            BootstrapServers = _bootstrapServers,
-            ClientId = UserService.CurrentUser?.Username,
-        };
-
-        _producer = new ProducerBuilder<string, string>(producerConfig).Build();
-
-        _consumerTask = Task.Run(async () =>
-        {
-            var config = new ConsumerConfig
+        _kafka = new KafkaConnection<string, string>("group-chat", UserService.CurrentUser.Username, async (result) => {
+            try
             {
-                BootstrapServers = _bootstrapServers,
-                GroupId = System.Guid.NewGuid().ToString(),
-                AutoOffsetReset = AutoOffsetReset.Earliest,
-                EnableAutoCommit = false,
-            };
-
-            using (var consumer = new ConsumerBuilder<string, string>(config).Build())
-            {
-                consumer.Subscribe(_topic);
-
-                while (!_cancel.Token.IsCancellationRequested)
-                {
-                    try
-                    {
-                        var consumeResult = consumer.Consume(_cancel.Token);
-                        var msg = consumeResult.Message;
-                        if (msg.Key == UserService.CurrentUser?.RoomCode) {
-                            _messages.Add(JObject.Parse(msg.Value)?.ToObject<ChatMessage>());
-                        }
-                        await InvokeAsync(StateHasChanged);
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine(ex);
-                    }
+                if (result.Message.Key == UserService.CurrentUser?.RoomCode) {
+                    _messages.Add(JObject.Parse(result.Message.Value)?.ToObject<ChatMessage>());
+                    await InvokeAsync(StateHasChanged);
                 }
-
-                consumer.Close();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
             }
         });
-
     }
 
     private class ChatMessage
@@ -149,7 +113,6 @@
 
     public void Dispose()
     {
-        _cancel.Cancel();
-        _producer?.Dispose();
+        _kafka?.Dispose();
     }
 }

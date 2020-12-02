@@ -6,7 +6,6 @@ using System.Security.Claims;
 using System.Threading;
 using System.Text;
 
-using Confluent.Kafka;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -28,11 +27,7 @@ namespace Tutag.Services
     {
         private readonly AppSettings _appSettings;
         private readonly AuthenticationStateProvider _authProvider;
-        static IProducer<string, string> _producer = null;
-        static IConsumer<string, string> _consumer = null;
-        static string _topic = "authenticate";
-        private static string _bootstrapServers = "localhost:9092";
-        private static CancellationTokenSource _cancel = new CancellationTokenSource();
+        static KafkaConnection<string, string> _kafka;
         private static Dictionary<string, List<string>> _users = new Dictionary<string, List<string>>();
 
         public Entities.User CurrentUser
@@ -53,22 +48,7 @@ namespace Tutag.Services
 
         static UserService()
         {
-            var producerConfig = new ProducerConfig
-            {
-                BootstrapServers = _bootstrapServers,
-                ClientId = "AuthenticationServer",
-            };
-            var consumerConfig = new ConsumerConfig
-            {
-                BootstrapServers = _bootstrapServers,
-                GroupId = System.Guid.NewGuid().ToString(),
-                AutoOffsetReset = AutoOffsetReset.Earliest,
-                EnableAutoCommit = false,
-            };
-
-            _producer = new ProducerBuilder<string, string>(producerConfig).Build();
-            _consumer = new ConsumerBuilder<string, string>(consumerConfig).Build();
-            _consumer.Subscribe(_topic);
+            _kafka = new KafkaConnection<string, string>("authenticate", "AuthenticationServer");
         }
 
         public UserService(IOptions<AppSettings> appSettings, AuthenticationStateProvider auth)
@@ -79,16 +59,12 @@ namespace Tutag.Services
 
         public string Authenticate(AuthenticateRequest model)
         {
-            _producer.Produce(_topic, new Message<string, string>
-            {
-                Key = model.RoomCode,
-                Value = JObject.FromObject(model).ToString(),
-            });
+            _kafka.Produce(model.RoomCode, JObject.FromObject(model).ToString());
 
             var cancel = new CancellationTokenSource(1000);
             while (true)
             {
-                var consumeResult = _consumer.Consume(cancel.Token);
+                var consumeResult = _kafka.Consumer.Consume(cancel.Token);
                 var msg = JObject.Parse(consumeResult.Message.Value).ToObject<Models.AuthenticateRequest>();
 
                 if (!_users.ContainsKey(msg.RoomCode))
