@@ -28,26 +28,14 @@
 </AuthorizeView>
 
 @code {
-    class VoteEvent
-    {
-        public VoteEvent(string username, int vote)
-        {
-            Username = username;
-            Vote = vote;
-        }
-
-        public string Username { set; get; }
-        public int Vote { set; get; }
-    }
-
-    private KafkaConnection<string, VoteEvent> _kafka;
+    private KafkaConnection<string, Models.VoteEvent> _kafka;
     private Dictionary<string, int> _votes = new Dictionary<string, int>();
 
     private int VoteTotal => _votes.Values.ToList().Sum();
 
     private void Vote(int value)
     {
-        _kafka.Produce(UserService.CurrentUser?.RoomCode, new VoteEvent(UserService.CurrentUser?.Username, value));
+        _kafka.Produce(UserService.CurrentUser?.RoomCode, new Models.VoteEvent(UserService.CurrentUser?.Username, value));
     }
 
     protected override void OnInitialized()
@@ -57,7 +45,7 @@
             return;
         }
 
-        _kafka = new KafkaConnection<string, VoteEvent>("voting", UserService.CurrentUser.Username, async (result) =>
+        _kafka = new KafkaConnection<string, Models.VoteEvent>("voting", UserService.CurrentUser.Username, async (result) =>
         {
             try
             {
