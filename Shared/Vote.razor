@@ -1,0 +1,33 @@
+<div>
+    <button class="btn @UpButton">
+        <span class="oi oi-thumb-up" aria-hidden="true" @onclick="Up"></span>
+    </button>
+    <button class="btn @DownButton">
+        <span class="oi oi-thumb-down" aria-hidden="true" @onclick="Down"></span>
+    </button>
+    @Message
+</div>
+
+@code{
+    [ParameterAttribute]
+    public int Value { get; set; }
+    [ParameterAttribute]
+    public string Message { get; set; }
+    [Parameter]
+    public EventCallback<int> OnChange { get; set; }
+
+    private string UpButton => Value > 0 ? "btn-primary" : "btn-secondary";
+    private string DownButton => Value < 0 ? "btn-primary" : "btn-secondary";
+
+    private void Up()
+    {
+        Value = Value > 0 ? 0 : 1;
+        OnChange.InvokeAsync(Value);
+    }
+
+    private void Down()
+    {
+        Value = Value < 0 ? 0 : -1;
+        OnChange.InvokeAsync(Value);
+    }
+}

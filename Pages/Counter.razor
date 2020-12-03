@@ -17,10 +17,7 @@
             </span>
             <p>Vote Total: @VoteTotal</p>
         </div>
-
-        <button class="btn btn-primary" @onclick="() => Vote(-1)">-1</button>
-        <button class="btn btn-primary" @onclick="() => Vote(0)">0</button>
-        <button class="btn btn-primary" @onclick="() => Vote(1)">+1</button>
+        <Vote Message="Cross the river" OnChange="@Vote"></Vote>
     </Authorized>
     <NotAuthorized>
         <Login></Login>
