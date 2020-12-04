@@ -1,5 +1,6 @@
 ﻿@page "/counter"
 @using System.Collections.Generic
+@using Confluent.Kafka
 @implements IDisposable
 @inject IUserService UserService
 
@@ -19,7 +20,7 @@
         </div>
 
         @foreach(var action in Actions) {
-            <Vote Message="@action.Description" OnChange="@(v => Vote(action, v))"></Vote>
+            <Vote Message="@action.Message.Value.Description" OnChange="@(v => Vote(action, v))"></Vote>
         }
 
         @if (UserService.CurrentUser?.IsAdmin == true) {
@@ -36,16 +37,17 @@
     private KafkaConnection<string, Models.VoteEvent> _kafkaVoteEvents;
     private KafkaConnection<string, Models.Action> _kafkaActions;
     private Dictionary<string, int> _votes = new Dictionary<string, int>();
-    private Dictionary<int, List<Models.Action>> _actions = new Dictionary<int, List<Models.Action>>();
+    private Dictionary<int, List<ConsumeResult<string, Models.Action>>> _actions = 
+        new Dictionary<int, List<ConsumeResult<string, Models.Action>>>();
     private string _newMessage = "";
 
     private int VoteTotal => _votes.Values.ToList().Sum();
     private int Turn => 0;
-    private Models.Action[] Actions => _actions.ContainsKey(Turn) 
+    private ConsumeResult<string, Models.Action>[] Actions => _actions.ContainsKey(Turn) 
         ? _actions[Turn].ToArray() 
-        : new Models.Action[0];
+        : new ConsumeResult<string, Models.Action>[0];
 
-    private void Vote(Models.Action action, int value)
+    private void Vote(ConsumeResult<string, Models.Action> action, int value)
     {
         _kafkaVoteEvents.Produce(UserService.CurrentUser?.RoomCode, new Models.VoteEvent(UserService.CurrentUser?.Username, value));
     }
@@ -67,9 +69,9 @@
                         // Store actions by turn
                         var turn = result.Message.Value.Turn;
                         if (!_actions.ContainsKey(turn)) {
-                            _actions[turn] = new List<Models.Action>();
+                            _actions[turn] = new List<ConsumeResult<string, Models.Action>>();
                         }
-                        _actions[turn].Add(result.Message.Value);
+                        _actions[turn].Add(result);
                         await InvokeAsync(StateHasChanged);
                     }
                 }
