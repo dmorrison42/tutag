@@ -5,6 +5,9 @@
     <button class="btn @DownButton" @onclick="Down">
         <span class="oi oi-thumb-down" aria-hidden="true"></span>
     </button>
+    @if (Total != null) {
+    @Total
+    }
     @Message
 </div>
 
@@ -13,6 +16,8 @@
     public int Value { get; set; }
     [ParameterAttribute]
     public string Message { get; set; }
+    [ParameterAttribute]
+    public int? Total { get; set; }
     [Parameter]
     public EventCallback<int> OnChange { get; set; }
 

@@ -33,6 +33,7 @@ namespace Tutag
             services.AddServerSideBlazor();
             services.AddSingleton<WeatherForecastService>();
             services.AddScoped<IUserService, UserService>();
+            services.AddScoped<IVoteService, VoteService>();
             services.AddAuthorization();
         }
 
