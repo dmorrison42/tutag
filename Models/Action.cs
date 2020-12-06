@@ -4,11 +4,11 @@ namespace Tutag.Models
 {
     public class Action
     {
-        public Action(int turn, string action, int id = -1)
+        public Action(int turn, string action, int actionId = -1)
         {
             Turn = turn;
             Description = action;
-            Id = id;
+            Id = actionId;
         }
 
         public int Turn { set; get; }

@@ -21,6 +21,7 @@ namespace Tutag.Services
     public class VoteService : IVoteService
     {
         private readonly IUserService _userService;
+        private readonly ITurnService _turnService;
         static KafkaConnection<string, Models.Action> _kafkaActions;
         static KafkaConnection<string, Models.VoteEvent> _kafkaVotes;
         private static Dictionary<(string, int), List<Models.Action>> _actions =
@@ -28,7 +29,7 @@ namespace Tutag.Services
         private static Dictionary<(string, int), Dictionary<string, int>> _votes =
             new Dictionary<(string, int), Dictionary<string, int>>();
 
-        private int Turn => 0;
+        private int Turn => _turnService.CurrentTurn?.Id ?? -1;
         private string RoomCode => _userService?.CurrentUser?.RoomCode;
         private string Username => _userService?.CurrentUser?.Username;
         public IReadOnlyList<Models.Action> Actions => _actions.ContainsKey((RoomCode, Turn))
@@ -71,9 +72,10 @@ namespace Tutag.Services
                 });
         }
 
-        public VoteService(IUserService userService)
+        public VoteService(IUserService userService, ITurnService turnService)
         {
             _userService = userService;
+            _turnService = turnService;
 
             OnGlobalUpdate += (o, e) =>
             {
