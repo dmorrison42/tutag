@@ -18,8 +18,8 @@
 
         @foreach (var action in Actions)
             {
-                <Vote Message="@action.Description" OnChange="@(v => Vote(action.ActionId,v))"
-                    Value="@VoteService.GetMyVote(action.ActionId)" Total="@VoteService.CountVotes(action.ActionId)"></Vote>
+                <Vote Message="@action.Description" OnChange="@(v => Vote(action.Id,v))"
+                    Value="@VoteService.GetMyVote(action.Id)" Total="@VoteService.CountVotes(action.Id)"></Vote>
             }
 
                 @if (UserService.CurrentUser?.IsAdmin == true)
@@ -43,7 +43,7 @@
     }
 
     private IEnumerable<Models.Action> Actions => VoteService.Actions
-        .OrderByDescending(v => VoteService.CountVotes(v.ActionId));
+        .OrderByDescending(v => VoteService.CountVotes(v.Id));
 
     protected override void OnInitialized()
     {
