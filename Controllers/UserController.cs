@@ -40,5 +40,13 @@ namespace Tutag.Controllers
                 return Redirect(redirect);
             }
         }
+
+        [HttpPost("logout")]
+        public IActionResult Logout()
+        {
+            Response.Cookies.Delete("Authorization");
+
+            return Redirect("/");
+        }
     }
 }
