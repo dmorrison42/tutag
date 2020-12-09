@@ -1,0 +1,15 @@
+@inject IUserService UserService
+
+<div class="alert alert-secondary mt-4" role="alert">
+    <span class="oi oi-person mr-2" aria-hidden="true"></span>
+    <span>
+        You are connected as
+        <b>@UserService.CurrentUser?.Username</b>
+        Room Code
+        <i>@UserService.CurrentUser?.RoomCode</i>
+        <i>@(UserService.CurrentUser?.IsAdmin == true ? "[Admin]" :"")</i>
+    </span>
+    <form action="/users/logout" method="POST" style="float: right;">
+        <input type="submit" value="Logout">
+    </form>
+</div>

@@ -1,0 +1,47 @@
+﻿@inject IUserService UserService
+@inject ITurnService TurnService
+
+<div>
+    <div class="alert alert-secondary mt-4" role="alert">
+        @TurnService.CurrentTurn?.Prompt
+        @if (UserService.CurrentUser?.IsAdmin == true)
+        {
+            <textarea class="input-lg" placeholder="enter your comment" @bind="_newPrompt" @bind:event="oninput"
+                @onkeyup="ProcessKey(StartTurnAsync)"></textarea>
+            <button class="btn btn-default" @onclick="@(() => StartTurnAsync())">Send</button>
+        }
+    </div>
+</div>
+
+@code {
+    private string _newPrompt = "";
+
+    protected override void OnInitialized()
+    {
+        TurnService.OnUpdate += (o, e) =>
+        {
+            InvokeAsync(StateHasChanged);
+        };
+    }
+
+    private async Task StartTurnAsync()
+    {
+        var buffer = _newPrompt;
+        _newPrompt = null;
+        await Task.Run(() =>
+        {
+            TurnService.CreateTurn(buffer);
+        });
+    }
+
+    public Func<KeyboardEventArgs, Task> ProcessKey(Func<Task> action)
+    {
+        return async (e) =>
+        {
+            if (!e.ShiftKey && e.Key == "Enter")
+            {
+                await action();
+            }
+        };
+    }
+}

@@ -1,0 +1,65 @@
+@inject IVoteService VoteService
+@inject IUserService UserService
+@inject ITurnService TurnService
+
+<div>
+    @foreach (var action in Actions)
+    {
+        <Vote Message="@action.Description" OnChange="@(v => Vote(action.Id,v))" Value="@VoteService.GetMyVote(action.Id)"
+            Total="@VoteService.CountVotes(action.Id)">
+        </Vote>
+    }
+
+    @if (UserService.CurrentUser?.IsAdmin == true)
+    {
+        <textarea class="input-lg" placeholder="enter your comment" @bind="_newActionText" @bind:event="oninput"
+            @onkeyup="ProcessKey(SendAsync)"></textarea>
+        <button class="btn btn-default" @onclick="@(() => SendAsync())">Send</button>
+    }
+</div>
+
+@code {
+    private string _newActionText = "";
+
+    private IEnumerable<Models.Action> Actions => VoteService.Actions
+        .OrderByDescending(v => VoteService.CountVotes(v.Id));
+
+    private void Vote(int actionId, int value)
+    {
+        VoteService.CastVote(actionId, value);
+    }
+
+    protected override void OnInitialized()
+    {
+        VoteService.OnUpdate += (o, e) =>
+        {
+            InvokeAsync(StateHasChanged);
+        };
+
+        TurnService.OnUpdate += (o, e) =>
+        {
+            InvokeAsync(StateHasChanged);
+        };
+    }
+
+    private async Task SendAsync()
+    {
+        var buffer = _newActionText;
+        _newActionText = null;
+        await Task.Run(() =>
+        {
+            VoteService.CreateAction(buffer);
+        });
+    }
+
+    public Func<KeyboardEventArgs, Task> ProcessKey(Func<Task> action)
+    {
+        return async (e) =>
+        {
+            if (!e.ShiftKey && e.Key == "Enter")
+            {
+                await action();
+            }
+        };
+    }
+}

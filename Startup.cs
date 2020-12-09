@@ -9,7 +9,6 @@ using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Tutag.Data;
 using Tutag.Helpers;
 using Tutag.Services;
 
@@ -31,7 +30,6 @@ namespace Tutag
             services.AddRazorPages();
             services.AddControllers();
             services.AddServerSideBlazor();
-            services.AddSingleton<WeatherForecastService>();
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<ITurnService, TurnService>();
             services.AddScoped<IVoteService, VoteService>();

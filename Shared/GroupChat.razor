@@ -1,4 +1,3 @@
-@page "/groupchat"
 @using Confluent.Kafka
 @using System.Threading
 @using System.ComponentModel
@@ -8,45 +7,27 @@
 @inject NavigationManager navigationManager
 @inject IUserService UserService
 
-<AuthorizeView>
-    <Authorized>
-        <h1>Blazor SignalR Chat Sample</h1>
-        <div class="alert alert-secondary mt-4" role="alert">
-            <span class="oi oi-person mr-2" aria-hidden="true"></span>
-            <span>
-                You are connected as 
-                <b>@UserService.CurrentUser?.Username</b>
-                Room Code
-                <i>@UserService.CurrentUser?.RoomCode</i>
-                @if (UserService.CurrentUser?.IsAdmin == true) {
-                    <i>[Admin]</i>
-                }
-            </span>
-        </div>
-        <div id="scrollbox">
-            @foreach (var item in _messages)
+<div>
+    <div id="scrollbox">
+        @foreach (var item in _messages)
+        {
+            @if (item.IsNotice)
             {
-                @if (item.IsNotice)
-                {
-                    <div class="alert alert-info">@item.Body</div>
-                }
-                else
-                {
-                    <div class="@item.CSS(UserService.CurrentUser?.Username)">
-                        <div class="user">@item.Username</div>
-                        <div class="msg">@item.Body</div>
-                    </div>
-                }
+                <div class="alert alert-info">@item.Body</div>
             }
-            <hr />
-            <textarea class="input-lg" placeholder="enter your comment" @bind="@_newMessage"  @bind:event="oninput" @onkeyup="ProcessKey"></textarea>
-            <button class="btn btn-default" @onclick="@(() => SendAsync())">Send</button>
-        </div>
-    </Authorized>
-    <NotAuthorized>
-        <Login></Login>
-    </NotAuthorized>
-</AuthorizeView>
+            else
+            {
+                <div class="@item.CSS(UserService.CurrentUser?.Username)">
+                    <div class="user">@item.Username</div>
+                    <div class="msg">@item.Body</div>
+                </div>
+            }
+        }
+        <hr />
+        <textarea class="input-lg" placeholder="enter your comment" @bind="@_newMessage"  @bind:event="oninput" @onkeyup="ProcessKey"></textarea>
+        <button class="btn btn-default" @onclick="@(() => SendAsync())">Send</button>
+    </div>
+</div>
 
 @code {
     private KafkaConnection<string, ChatMessage> _kafka;
