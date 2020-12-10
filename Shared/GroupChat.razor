@@ -7,26 +7,26 @@
 @inject NavigationManager navigationManager
 @inject IUserService UserService
 
-<div>
-    <div id="scrollbox">
-        @foreach (var item in _messages)
+<div id="scrollbox">
+    @foreach (var item in _messages)
+    {
+        @if (item.IsNotice)
         {
-            @if (item.IsNotice)
-            {
-                <div class="alert alert-info">@item.Body</div>
-            }
-            else
-            {
-                <div class="@item.CSS(UserService.CurrentUser?.Username)">
-                    <div class="user">@item.Username</div>
-                    <div class="msg">@item.Body</div>
-                </div>
-            }
+            <div class="alert alert-info">@item.Body</div>
         }
-        <hr />
-        <textarea class="input-lg" placeholder="enter your comment" @bind="@_newMessage"  @bind:event="oninput" @onkeyup="ProcessKey"></textarea>
-        <button class="btn btn-default" @onclick="@(() => SendAsync())">Send</button>
-    </div>
+        else
+        {
+            <div class="@item.CSS(UserService.CurrentUser?.Username)">
+                <div class="user">@item.Username</div>
+                <div class="msg">@item.Body</div>
+            </div>
+        }
+    }
+    <hr />
+</div>
+<div>
+    <textarea class="input-lg" placeholder="enter your comment" @bind="@_newMessage"  @bind:event="oninput" @onkeyup="ProcessKey"></textarea>
+    <button class="btn btn-default" @onclick="@(() => SendAsync())">Send</button>
 </div>
 
 @code {
