@@ -82,15 +82,13 @@ app textarea {
 }
 
 .sent {
-    background: #03a9f4;
-    color: #fff;
+    color: #03a9f4;
     margin-left: 10%;
     text-align: right;
 }
 
 .received {
-    background: #4CAF50;
-    color: #fff;
+    color: #4CAF50;
     margin-right: 10%;
 }
 
@@ -98,5 +96,5 @@ app textarea {
 .user {
     font-size: 0.8em;
     font-weight: bold;
-    color: #000;
+    color: #FFF;
 }
