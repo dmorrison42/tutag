@@ -16,11 +16,17 @@ app > div {
     bottom: 0;
     left: 0;
     right: 0;
-    align-items: center;
+    align-items: stretch;
 }
 
-app > div > div {
-    min-width: 500px;
+@media (min-width: 600px) {
+    app > div {
+        align-items: center;
+    }
+
+    app > div > div {
+        width: 500px;
+    }
 }
 
 #scrollbox {
