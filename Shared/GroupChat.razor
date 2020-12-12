@@ -8,7 +8,7 @@
 @inject IUserService UserService
 
 <div id="scrollbox">
-    @foreach (var item in _messages)
+    @foreach (var item in _messages.ToArray())
     {
         @if (item.IsNotice)
         {
