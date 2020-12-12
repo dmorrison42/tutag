@@ -10,15 +10,15 @@
         </Vote>
     }
 
-    @if (UserService.CurrentUser?.IsAdmin == true)
+        @if (UserService.CurrentUser?.IsAdmin == true)
     {
-        <textarea class="input-lg" placeholder="enter your comment" @bind="_newActionText" @bind:event="oninput"
+        <textarea class="input-lg" placeholder="enter action vote" @bind="_newActionText" @bind:event="oninput"
             @onkeyup="ProcessKey(SendAsync)"></textarea>
         <button class="btn btn-default" @onclick="@(() => SendAsync())">Send</button>
     }
-</div>
+    </div>
 
-@code {
+    @code {
     private string _newActionText = "";
 
     private IEnumerable<Models.Action> Actions => VoteService.Actions

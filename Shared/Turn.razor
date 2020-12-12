@@ -6,14 +6,14 @@
         @TurnService.CurrentTurn?.Prompt
         @if (UserService.CurrentUser?.IsAdmin == true)
         {
-            <textarea class="input-lg" placeholder="enter your comment" @bind="_newPrompt" @bind:event="oninput"
+            <textarea class="input-lg" placeholder="enter turn prompt" @bind="_newPrompt" @bind:event="oninput"
                 @onkeyup="ProcessKey(StartTurnAsync)"></textarea>
             <button class="btn btn-default" @onclick="@(() => StartTurnAsync())">Send</button>
         }
+        </div>
     </div>
-</div>
 
-@code {
+    @code {
     private string _newPrompt = "";
 
     protected override void OnInitialized()
