@@ -1,12 +1,14 @@
 @inject NavigationManager MyNavigationManager
 
-<form action="/users/authenticate" method="POST">
-  <label for="Username">Username:</label><br>
-  <input type="text" name="Username" value=""><br>
+<div>
+  <form action="/users/authenticate" method="POST">
+    <label for="Username">Username:</label><br>
+    <input type="text" name="Username" value=""><br>
 
-  <label for="RoomCode">Room Code:</label><br>
-  <input type="text" name="RoomCode" value=""><br><br>
+    <label for="RoomCode">Room Code:</label><br>
+    <input type="text" name="RoomCode" value=""><br><br>
 
-  <input type="hidden" name="redirect" value="@(MyNavigationManager.Uri)"><br><br>
-  <input type="submit" value="Submit">
-</form>
+    <input type="hidden" name="redirect" value="@(MyNavigationManager.Uri)"><br><br>
+    <input type="submit" value="Submit">
+  </form>
+</div>

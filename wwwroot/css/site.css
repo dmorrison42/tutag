@@ -14,13 +14,24 @@ app > div {
     position: absolute;
     top: 0;
     bottom: 0;
-    margin-left: auto;
-    margin-right: auto;
+    left: 0;
+    right: 0;
+    align-items: center;
+}
+
+app > div > div {
+    min-width: 500px;
 }
 
 #scrollbox {
     flex-grow: 1;
     overflow: auto;
+    min-height: 300px;
+}
+
+app textarea {
+    display: block;
+    width: 100%;
 }
 
 /****************
